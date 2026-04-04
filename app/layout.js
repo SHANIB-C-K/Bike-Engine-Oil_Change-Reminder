@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Inter } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,6 +22,16 @@ export default function RootLayout({ children }) {
           <div className="relative z-10">
             {children}
           </div>
+          <Toaster 
+            position="bottom-center"
+            toastOptions={{
+              style: {
+                background: '#1e293b',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

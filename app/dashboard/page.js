@@ -9,6 +9,7 @@ import Navbar from "@/components/Navbar";
 import StatCard from "@/components/StatCard";
 import CircularProgress from "@/components/CircularProgress";
 import DailyRideInput from "@/components/DailyRideInput";
+import ExpenseInput from "@/components/ExpenseInput";
 import AlertModal from "@/components/AlertModal";
 import {
   Bike,
@@ -311,13 +312,19 @@ export default function DashboardPage() {
 
             {/* Right column */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Add ride */}
-              <DailyRideInput 
-                onRideAdded={fetchUserData} 
-                quickAddKm={quickAddKm} 
-                mechanicPhone={mechanicPhone} 
-                currentStats={{ totalKm, lastResetKm, oilChangeLimit }}
-              />
+              
+              {/* Action Cards (Add Ride & Add Expense) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                 {/* Add ride */}
+                 <DailyRideInput 
+                   onRideAdded={fetchUserData} 
+                   quickAddKm={quickAddKm} 
+                   mechanicPhone={mechanicPhone} 
+                   currentStats={{ totalKm, lastResetKm, oilChangeLimit }}
+                 />
+                 {/* Add expense */}
+                 <ExpenseInput onExpenseAdded={fetchUserData} />
+              </div>
 
               {/* Oil limit setting */}
               <motion.div
