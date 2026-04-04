@@ -9,6 +9,8 @@ import Navbar from "@/components/Navbar";
 import { MapPin, Calendar, Clock, Bike, Loader2, Edit2, Trash2, Check, X as XIcon, History as HistoryIcon, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import CalendarComponent from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 export default function HistoryPage() {
   const { user, loading: authLoading } = useAuth();
@@ -203,6 +205,43 @@ export default function HistoryPage() {
               </motion.button>
             )}
           </motion.div>
+
+          {/* Calendar View */}
+          <div className="mb-8">
+             <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-2xl p-5 sm:p-6 border border-white/8 overflow-hidden"
+             >
+                <style>{`
+                  .react-calendar { background: transparent; border: none; font-family: inherit; width: 100%; color: white; }
+                  .react-calendar__navigation button { color: white; min-width: 44px; background: transparent; font-weight: bold; border-radius: 8px; transition: all 0.2s; }
+                  .react-calendar__navigation button:enabled:hover { background: rgba(255,255,255,0.1); }
+                  .react-calendar__month-view__days__day--weekend { color: #f87171; }
+                  .react-calendar__month-view__weekdays { color: #94a3b8; font-weight: 500; text-transform: uppercase; font-size: 0.75rem; }
+                  .react-calendar__month-view__weekdays__weekday abbr { text-decoration: none; }
+                  .react-calendar__tile { color: white; border-radius: 8px; padding: 14px 0.5em; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 56px; }
+                  .react-calendar__tile:enabled:hover { background: rgba(255,255,255,0.1); border-radius: 8px; }
+                  .react-calendar__tile--now { background: rgba(6, 182, 212, 0.2); border-radius: 8px; }
+                  .react-calendar__tile--active { background: rgba(168, 85, 247, 0.8) !important; color: white; border-radius: 8px; }
+                  .ride-dot { height: 6px; width: 6px; background-color: #22d3ee; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 8px #22d3ee; }
+                `}</style>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                   <Calendar className="text-purple-400" size={18} /> Ride Calendar Map
+                </h3>
+                <CalendarComponent
+                  tileContent={({ date, view }) => {
+                    if (view === 'month') {
+                      const hasRide = rides.some(r => {
+                        const rDate = r.date ? new Date(r.date.seconds * 1000) : new Date();
+                        return rDate.toDateString() === date.toDateString();
+                      });
+                      return hasRide ? <div className="ride-dot" /> : null;
+                    }
+                  }}
+                />
+             </motion.div>
+          </div>
 
           {/* List */}
           <div className="space-y-4">

@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
@@ -11,6 +11,7 @@ import CircularProgress from "@/components/CircularProgress";
 import DailyRideInput from "@/components/DailyRideInput";
 import ExpenseInput from "@/components/ExpenseInput";
 import AlertModal from "@/components/AlertModal";
+import { playWarningSound, sendBrowserNotification } from "@/hooks/useNotifications";
 import {
   Bike,
   MapPin,
@@ -29,17 +30,8 @@ export default function DashboardPage() {
   const [showAlert, setShowAlert] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [limitEditing, setLimitEditing] = useState(false);
-  const [newLimit, setNewLimit] = useState("");
-  const [savingLimit, setSavingLimit] = useState(false);
-  const [dateEditing, setDateEditing] = useState(false);
-  const [newDate, setNewDate] = useState("");
-  const [savingDate, setSavingDate] = useState(false);
-  const [quickAddEditing, setQuickAddEditing] = useState(false);
-  const [newQuickAdd, setNewQuickAdd] = useState("");
-  const [savingQuickAdd, setSavingQuickAdd] = useState(false);
-  const [phoneEditing, setPhoneEditing] = useState(false);
-  const [newPhone, setNewPhone] = useState("");
-  const [savingPhone, setSavingPhone] = useState(false);
+  const [avgDailyKm, setAvgDailyKm] = useState(0);
+
 
   const fetchUserData = useCallback(async () => {
     if (!user) return;
@@ -71,17 +63,45 @@ export default function DashboardPage() {
     if (!authLoading && !user) router.push("/login");
   }, [user, authLoading, router]);
 
+  const fetchStats = useCallback(async () => {
+    if (!user) return;
+    try {
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const q = query(
+        collection(db, "rides"),
+        where("userId", "==", user.uid),
+        where("date", ">=", twoWeeksAgo)
+      );
+      const snap = await getDocs(q);
+      let sum = 0;
+      snap.forEach(d => { sum += d.data().km; });
+      setAvgDailyKm(sum / 14);
+    } catch(err) {
+      console.error(err);
+    }
+  }, [user]);
+
   useEffect(() => {
-    if (user) fetchUserData();
-  }, [user, fetchUserData]);
+    if (user) {
+      fetchUserData();
+      fetchStats();
+    }
+  }, [user, fetchUserData, fetchStats]);
 
   // Check reminder
   useEffect(() => {
     if (!userData) return;
     const { totalKm, oilChangeLimit, lastResetKm } = userData;
     const remaining = oilChangeLimit - (totalKm - lastResetKm);
-    if (remaining <= 0) setShowAlert(true);
-  }, [userData]);
+    if (remaining <= 0) {
+        setShowAlert(true);
+        if (!showAlert) { // To prevent infinite sounds if it re-renders
+            sendBrowserNotification("Oil Change Due! ⚠️", "It's time to change your engine oil. Please check your dashboard.");
+            playWarningSound();
+        }
+    }
+  }, [userData, showAlert]);
 
   const handleOilChanged = async () => {
     setResetLoading(true);
@@ -326,215 +346,41 @@ export default function DashboardPage() {
                  <ExpenseInput onExpenseAdded={fetchUserData} />
               </div>
 
-              {/* Oil limit setting */}
+              {/* Smart Prediction Engine */}
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="glass rounded-2xl p-6 border border-white/8"
+                className="glass rounded-2xl p-6 border border-white/8 relative overflow-hidden"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center">
-                      <Settings2 size={18} className="text-green-400" />
+                 <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <CalendarDays size={100} />
+                 </div>
+                 <h3 className="text-lg font-semibold text-white mb-2 relative z-10 flex items-center gap-2">
+                     <CalendarDays className="text-cyan-400" size={18} /> Smart Predictor
+                 </h3>
+                 <p className="text-sm text-slate-400 mb-6 relative z-10">
+                     Based on your 14-day riding average of <span className="text-white font-mono">{avgDailyKm.toFixed(1)} km/day</span>
+                 </p>
+                 
+                 <div className="grid grid-cols-2 gap-4 relative z-10">
+                    <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5">
+                        <p className="text-xs text-slate-500 mb-1">Estimated Days Left</p>
+                        <p className="text-2xl font-bold text-white">
+                           {avgDailyKm > 0 ? Math.max(0, Math.ceil(remainingKm / avgDailyKm)) : "--"} <span className="text-sm font-normal text-slate-400">days</span>
+                        </p>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Oil Change Interval</h3>
-                      <p className="text-xs text-slate-500">
-                        Current: {oilChangeLimit.toLocaleString()} km
-                      </p>
+                    <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5">
+                        <p className="text-xs text-slate-500 mb-1">Estimated Date</p>
+                        <p className="text-lg font-bold text-cyan-400 mt-1">
+                           {avgDailyKm > 0 ? (
+                              remainingKm > 0 ? new Date(Date.now() + (remainingKm / avgDailyKm) * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
+                                month: "short", day: "numeric", year: "numeric"
+                              }) : "Overdue"
+                           ) : "Need more data"}
+                        </p>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => { setLimitEditing(!limitEditing); setNewLimit(""); }}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium"
-                  >
-                    {limitEditing ? "Cancel" : "Edit"}
-                  </button>
-                </div>
-                {limitEditing && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="flex gap-3"
-                  >
-                    <input
-                      type="number"
-                      value={newLimit}
-                      onChange={(e) => setNewLimit(e.target.value)}
-                      placeholder={`New limit (e.g. ${oilChangeLimit})`}
-                      className="glass-input flex-1"
-                      min="100"
-                      max="50000"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handleLimitSave}
-                      disabled={savingLimit}
-                      className="px-5 py-2 rounded-xl btn-glow text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
-                    >
-                      {savingLimit ? <Loader2 size={14} className="animate-spin" /> : "Save"}
-                    </motion.button>
-                  </motion.div>
-                )}
-              </motion.div>
-
-              {/* Last Oil Change Date setting */}
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.45 }}
-                className="glass rounded-2xl p-6 border border-white/8"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                      <CalendarDays size={18} className="text-cyan-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Last Oil Change Date</h3>
-                      <p className="text-xs text-slate-500">
-                        Current: {lastOilStr}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setDateEditing(!dateEditing); setNewDate(""); }}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium"
-                  >
-                    {dateEditing ? "Cancel" : "Edit"}
-                  </button>
-                </div>
-                {dateEditing && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="flex gap-3"
-                  >
-                    <input
-                      type="date"
-                      value={newDate}
-                      onChange={(e) => setNewDate(e.target.value)}
-                      className="glass-input flex-1"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handleDateSave}
-                      disabled={savingDate}
-                      className="px-5 py-2 rounded-xl btn-glow text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
-                    >
-                      {savingDate ? <Loader2 size={14} className="animate-spin" /> : "Save"}
-                    </motion.button>
-                  </motion.div>
-                )}
-              </motion.div>
-
-              {/* Quick Add KM setting */}
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="glass rounded-2xl p-6 border border-white/8"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center">
-                      <Bike size={18} className="text-orange-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Daily Commute (Quick Add)</h3>
-                      <p className="text-xs text-slate-500">
-                        Current: {quickAddKm > 0 ? `${quickAddKm} km` : "Not set"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setQuickAddEditing(!quickAddEditing); setNewQuickAdd(""); }}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium"
-                  >
-                    {quickAddEditing ? "Cancel" : "Edit"}
-                  </button>
-                </div>
-                {quickAddEditing && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="flex gap-3"
-                  >
-                    <input
-                      type="number"
-                      value={newQuickAdd}
-                      onChange={(e) => setNewQuickAdd(e.target.value)}
-                      placeholder={`e.g. 15`}
-                      className="glass-input flex-1"
-                      min="0.1"
-                      step="0.1"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handleQuickAddSave}
-                      disabled={savingQuickAdd}
-                      className="px-5 py-2 rounded-xl btn-glow text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
-                    >
-                      {savingQuickAdd ? <Loader2 size={14} className="animate-spin" /> : "Save"}
-                    </motion.button>
-                  </motion.div>
-                )}
-              </motion.div>
-
-              {/* Mechanic Phone setting */}
-              <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.55 }}
-                className="glass rounded-2xl p-6 border border-white/8"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
-                      <Settings2 size={18} className="text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Emergency / Mechanic Phone</h3>
-                      <p className="text-xs text-slate-500">
-                        Current: {mechanicPhone || "Not set. Required for quick SMS/WhatsApp"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { setPhoneEditing(!phoneEditing); setNewPhone(mechanicPhone); }}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium"
-                  >
-                    {phoneEditing ? "Cancel" : "Edit"}
-                  </button>
-                </div>
-                {phoneEditing && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="flex gap-3"
-                  >
-                    <input
-                      type="text"
-                      value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
-                      placeholder={`e.g. +919876543210`}
-                      className="glass-input flex-1"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={handlePhoneSave}
-                      disabled={savingPhone}
-                      className="px-5 py-2 rounded-xl btn-glow text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
-                    >
-                      {savingPhone ? <Loader2 size={14} className="animate-spin" /> : "Save"}
-                    </motion.button>
-                  </motion.div>
-                )}
+                 </div>
               </motion.div>
 
 

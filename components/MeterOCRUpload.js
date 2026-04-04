@@ -11,6 +11,7 @@ export default function MeterOCRUpload({ onOcrSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [parsedValue, setParsedValue] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -19,6 +20,7 @@ export default function MeterOCRUpload({ onOcrSuccess, onCancel }) {
     if (!file) return;
 
     // Display preview
+    setImageFile(file);
     const objectUrl = URL.createObjectURL(file);
     setImagePreview(objectUrl);
     setLoading(true);
@@ -68,6 +70,34 @@ export default function MeterOCRUpload({ onOcrSuccess, onCancel }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUseValue = async () => {
+     let imgbbUrl = null;
+     if (imageFile && process.env.NEXT_PUBLIC_IMGBB_API_KEY) {
+         setLoading(true);
+         toast.loading("Uploading photo...", { id: "uploadingImage" });
+         try {
+             const formData = new FormData();
+             formData.append('image', imageFile);
+             
+             const res = await fetch(`https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`, {
+                 method: 'POST',
+                 body: formData
+             });
+             const data = await res.json();
+             if (data.success) {
+                 imgbbUrl = data.data.url;
+             }
+         } catch(e) {
+            console.error("Image upload failed", e);
+            toast.error("Failed to save image online, but reading continues.");
+         } finally {
+             toast.dismiss("uploadingImage");
+             setLoading(false);
+         }
+     }
+     onOcrSuccess(parsedValue, imgbbUrl);
   };
 
   return (
@@ -142,10 +172,12 @@ export default function MeterOCRUpload({ onOcrSuccess, onCancel }) {
                    Retake
                  </button>
                  <button
-                   onClick={() => onOcrSuccess(parsedValue)}
-                   className="flex-1 py-2 rounded-lg btn-glow text-white text-sm font-semibold flex justify-center items-center gap-1"
+                   onClick={handleUseValue}
+                   disabled={loading}
+                   className="flex-1 py-2 rounded-lg btn-glow text-white text-sm font-semibold flex justify-center items-center gap-1 disabled:opacity-50"
                  >
-                   <CheckCircle size={16} /> Use Value
+                   {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />} 
+                   {loading ? "Uploading..." : "Use Value"}
                  </button>
                </div>
             </div>

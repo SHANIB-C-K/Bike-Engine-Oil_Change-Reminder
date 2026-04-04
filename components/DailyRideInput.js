@@ -7,6 +7,7 @@ import { collection, addDoc, doc, updateDoc, increment, serverTimestamp } from "
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 import MeterOCRUpload from "./MeterOCRUpload";
+import { playSuccessSound } from "@/hooks/useNotifications";
 
 export default function DailyRideInput({ onRideAdded, quickAddKm = 0, mechanicPhone = "", currentStats }) {
   const { user } = useAuth();
@@ -95,7 +96,7 @@ export default function DailyRideInput({ onRideAdded, quickAddKm = 0, mechanicPh
     await handleAddRide(parseFloat(km));
   };
 
-  const handleAddRide = async (kmVal) => {
+  const handleAddRide = async (kmVal, imgUrl = null) => {
     if (!kmVal || kmVal <= 0) {
       toast.error("Please enter a valid km value.");
       return;
@@ -111,6 +112,7 @@ export default function DailyRideInput({ onRideAdded, quickAddKm = 0, mechanicPh
       await addDoc(collection(db, "rides"), {
         userId: user.uid,
         km: kmVal,
+        meterImage: imgUrl || null,
         date: serverTimestamp(),
       });
 
@@ -119,6 +121,7 @@ export default function DailyRideInput({ onRideAdded, quickAddKm = 0, mechanicPh
       await updateDoc(userRef, { totalKm: increment(kmVal) });
 
       setKm("");
+      playSuccessSound();
       toast.success(`Successfully added ${kmVal} km!`);
       
       if (onRideAdded) {
@@ -174,7 +177,7 @@ export default function DailyRideInput({ onRideAdded, quickAddKm = 0, mechanicPh
           >
              <MeterOCRUpload 
                  onCancel={() => setShowOCR(false)} 
-                 onOcrSuccess={(val) => setKm(val)} 
+                 onOcrSuccess={(val, imgUrl) => { setKm(val); if(imgUrl) handleAddRide(parseFloat(val), imgUrl); }} 
              />
              <div className="my-4 border-b border-white/5" />
           </motion.div>
