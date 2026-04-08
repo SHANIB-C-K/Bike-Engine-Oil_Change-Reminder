@@ -13,7 +13,7 @@ import {
   BarChart, Bar, AreaChart, Area
 } from "recharts";
 import { Loader2, TrendingUp, IndianRupee, MapPin, Download, Image as ImageIcon, FileText, FileSpreadsheet } from "lucide-react";
-import { format, subDays, isSameDay } from "date-fns";
+import { format, subDays, isSameDay, startOfMonth, startOfDay } from "date-fns";
 
 export default function AnalyticsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -22,6 +22,7 @@ export default function AnalyticsPage() {
   const [rides, setRides] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState("7");
   const dashboardRef = useRef(null);
 
   useEffect(() => {
@@ -80,36 +81,74 @@ export default function AnalyticsPage() {
 
   if (!user) return null;
 
-  // Process data for charts
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = subDays(new Date(), 6 - i);
-    return {
-      date: format(d, 'MMM dd'),
-      rawDate: d,
-      km: 0,
-      expense: 0
-    };
-  });
+  // Process data for charts based on timeRange
+  let chartData = [];
+  let totalKmFiltered = 0;
+  let totalExpenseFiltered = 0;
 
-  rides.forEach(r => {
-    const t = last7Days.find(d => isSameDay(d.rawDate, r.dateObj));
-    if (t) t.km += r.km;
-  });
+  if (timeRange === "all") {
+    const grouped = {};
+    [...rides, ...expenses].forEach(item => {
+       const key = format(item.dateObj, 'MMM yyyy');
+       const timestamp = startOfMonth(item.dateObj).getTime();
+       if (!grouped[key]) grouped[key] = { date: key, timestamp, km: 0, expense: 0 };
+    });
 
-  expenses.forEach(e => {
-    const t = last7Days.find(d => isSameDay(d.rawDate, e.dateObj));
-    if (t) t.expense += e.amount;
-  });
+    rides.forEach(r => {
+       grouped[format(r.dateObj, 'MMM yyyy')].km += r.km;
+       totalKmFiltered += r.km;
+    });
+    expenses.forEach(e => {
+       grouped[format(e.dateObj, 'MMM yyyy')].expense += e.amount;
+       totalExpenseFiltered += e.amount;
+    });
 
-  const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
-  const totalKm7Days = last7Days.reduce((sum, item) => sum + item.km, 0);
+    chartData = Object.values(grouped).sort((a,b) => a.timestamp - b.timestamp);
+  } else {
+    const days = parseInt(timeRange);
+    chartData = Array.from({ length: days }, (_, i) => {
+      const d = subDays(new Date(), (days - 1) - i);
+      return {
+        date: format(d, 'MMM dd'),
+        rawDate: d,
+        km: 0,
+        expense: 0
+      };
+    });
+
+    rides.forEach(r => {
+      const t = chartData.find(d => isSameDay(d.rawDate, r.dateObj));
+      if (t) {
+         t.km += r.km;
+         totalKmFiltered += r.km;
+      }
+    });
+
+    expenses.forEach(e => {
+      const t = chartData.find(d => isSameDay(d.rawDate, e.dateObj));
+      if (t) {
+         t.expense += e.amount;
+         totalExpenseFiltered += e.amount;
+      }
+    });
+  }
 
   const handleDownloadCsv = () => {
     let csv = "Date,Type,Value(KM/Rupees),Category\n";
     
+    let filteredRides = rides;
+    let filteredExpenses = expenses;
+
+    if (timeRange !== "all") {
+       const days = parseInt(timeRange);
+       const cutoff = startOfDay(subDays(new Date(), days - 1));
+       filteredRides = rides.filter(r => r.dateObj >= cutoff);
+       filteredExpenses = expenses.filter(e => e.dateObj >= cutoff);
+    }
+
     const allData = [
-       ...rides.map(r => ({ date: r.dateObj, type: 'Ride', value: r.km, category: '' })),
-       ...expenses.map(e => ({ date: e.dateObj, type: 'Expense', value: e.amount, category: e.category || 'Maintenance' }))
+       ...filteredRides.map(r => ({ date: r.dateObj, type: 'Ride', value: r.km, category: '' })),
+       ...filteredExpenses.map(e => ({ date: e.dateObj, type: 'Expense', value: e.amount, category: e.category || 'Maintenance' }))
     ].sort((a,b) => b.date - a.date);
 
     allData.forEach(item => {
@@ -191,6 +230,18 @@ export default function AnalyticsPage() {
               <p className="text-slate-400 text-sm mt-1">
                 Visualize your rides and maintenance costs.
               </p>
+              
+              <div className="flex bg-slate-800 rounded-lg p-1 mt-4 w-fit border border-white/10">
+                 {['7', '30', 'all'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setTimeRange(t)}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${timeRange === t ? 'bg-cyan-500 text-white shadow' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                      {t === 'all' ? 'All Time' : `${t} Days`}
+                    </button>
+                 ))}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <motion.button
@@ -234,13 +285,13 @@ export default function AnalyticsPage() {
                     <MapPin className="text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-slate-400 text-sm">7-Day Distance</p>
-                    <p className="text-3xl font-bold text-white">{totalKm7Days.toFixed(1)} <span className="text-lg text-slate-500">km</span></p>
+                    <p className="text-slate-400 text-sm">{timeRange === 'all' ? 'Total Distance' : `${timeRange}-Day Distance`}</p>
+                    <p className="text-3xl font-bold text-white">{totalKmFiltered.toFixed(1)} <span className="text-lg text-slate-500">km</span></p>
                   </div>
                 </div>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={last7Days}>
+                    <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="colorKm" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
@@ -272,12 +323,12 @@ export default function AnalyticsPage() {
                   </div>
                   <div>
                     <p className="text-slate-400 text-sm">Total Expenses</p>
-                    <p className="text-3xl font-bold text-white">₹{totalExpense.toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-white">₹{totalExpenseFiltered.toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={last7Days}>
+                    <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                       <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
                       <YAxis stroke="#94a3b8" fontSize={12} />
