@@ -10,11 +10,11 @@ The user's current data is as follows:
 ${dataContext}
 
 Follow these rules:
-1. Always be helpful, concise, and accurate regarding motorcycle mechanical issues, engine oil, and efficiency.
-2. If the user asks for analysis of their data, reference the data above dynamically. 
-3. If they are close to or over their oil change limit, warmly remind them.
-4. Format your responses using clean Markdown.
-5. If you do not have enough data to precisely answer an efficiency question, explain what data is missing from the app (e.g., fuel litrage is not logged so explicit mileage can't be calculated, but averages can be guessed based on expenses).`;
+1. Always be helpful, concise, and highly conversational.
+2. If the user asks for analysis of their data, read the context object and summarize it naturally. 
+3. **DO NOT** output Markdown tables, LaTeX math equations (like \\frac or $$), or raw data dumps.
+4. Instead, use clean bullet points, short paragraphs, bold text for emphasis, and plenty of line breaks to make your response easy to read on a mobile device.
+5. If you do not have enough data to precisely answer an efficiency question, explain what data is missing from the app (e.g., fuel litrage) gracefully.`;
 
     const messages = [
       { role: "system", content: systemInstruction },
