@@ -21,6 +21,7 @@ export default function SettingsPage() {
     mechanicPhone: "",
     autoMessageEnabled: true,
     preferredMethod: "wa",
+    lastOilChangeDate: "",
   });
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function SettingsPage() {
             mechanicPhone: d.mechanicPhone || "",
             autoMessageEnabled: d.autoMessageEnabled ?? true,
             preferredMethod: d.preferredMethod || "wa",
+            lastOilChangeDate: d.lastOilChangeDate ? new Date(d.lastOilChangeDate.seconds ? d.lastOilChangeDate.seconds * 1000 : (typeof d.lastOilChangeDate.toMillis === 'function' ? d.lastOilChangeDate.toMillis() : d.lastOilChangeDate)).toISOString().split('T')[0] : "",
           });
         }
       } catch(err) {
@@ -58,13 +60,19 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const ref = doc(db, "users", user.uid);
-      await updateDoc(ref, {
+      const updateData = {
         bikeName: formData.bikeName,
         oilChangeLimit: Number(formData.oilChangeLimit),
         mechanicPhone: formData.mechanicPhone,
         autoMessageEnabled: formData.autoMessageEnabled,
         preferredMethod: formData.preferredMethod,
-      });
+      };
+
+      if (formData.lastOilChangeDate) {
+        updateData.lastOilChangeDate = new Date(formData.lastOilChangeDate);
+      }
+
+      await updateDoc(ref, updateData);
       toast.success("Settings saved successfully!");
     } catch (err) {
       console.error(err);
@@ -129,6 +137,15 @@ export default function SettingsPage() {
                            onChange={e => setFormData({...formData, oilChangeLimit: e.target.value})}
                            className="glass-input w-full"
                            min="50"
+                         />
+                      </div>
+                      <div className="md:col-span-2">
+                         <label className="block text-sm font-medium text-slate-400 mb-1">Last Oil Change Date</label>
+                         <input 
+                           type="date" 
+                           value={formData.lastOilChangeDate}
+                           onChange={e => setFormData({...formData, lastOilChangeDate: e.target.value})}
+                           className="glass-input w-full md:w-1/2"
                          />
                       </div>
                    </div>

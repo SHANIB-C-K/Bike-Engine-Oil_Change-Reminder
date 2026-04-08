@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import * as htmlToImage from "html-to-image";
+import { jsPDF } from "jspdf";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +12,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, AreaChart, Area
 } from "recharts";
-import { Loader2, TrendingUp, IndianRupee, MapPin } from "lucide-react";
+import { Loader2, TrendingUp, IndianRupee, MapPin, Download, Image as ImageIcon, FileText, FileSpreadsheet } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
 
 export default function AnalyticsPage() {
@@ -20,6 +22,7 @@ export default function AnalyticsPage() {
   const [rides, setRides] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const dashboardRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
@@ -101,6 +104,76 @@ export default function AnalyticsPage() {
   const totalExpense = expenses.reduce((sum, item) => sum + item.amount, 0);
   const totalKm7Days = last7Days.reduce((sum, item) => sum + item.km, 0);
 
+  const handleDownloadCsv = () => {
+    let csv = "Date,Type,Value(KM/Rupees),Category\n";
+    
+    const allData = [
+       ...rides.map(r => ({ date: r.dateObj, type: 'Ride', value: r.km, category: '' })),
+       ...expenses.map(e => ({ date: e.dateObj, type: 'Expense', value: e.amount, category: e.category || 'Maintenance' }))
+    ].sort((a,b) => b.date - a.date);
+
+    allData.forEach(item => {
+       csv += `"${format(item.date, 'yyyy-MM-dd')}","${item.type}","${item.value}","${item.category}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bike_analytics_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadImage = async () => {
+    if (!dashboardRef.current) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(dashboardRef.current, {
+         quality: 0.95,
+         backgroundColor: '#0f172a',
+         pixelRatio: 2 // ensures high resolution
+      });
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `bike_analytics_${format(new Date(), 'yyyy-MM-dd')}.png`;
+      a.click();
+    } catch(err) {
+      console.error('Error generating image', err);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!dashboardRef.current) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(dashboardRef.current, {
+         quality: 0.95,
+         backgroundColor: '#0f172a',
+         pixelRatio: 2
+      });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const pdfWidth = pdf.internal.pageSize.getWidth() - 20; // 10mm padding on each side
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.setTextColor(255, 255, 255);
+      // We will place a background on the PDF itself to match
+      pdf.setFillColor(15, 23, 42); 
+      pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
+
+      pdf.setTextColor(200, 200, 200);
+      pdf.setFontSize(14);
+      pdf.text("BikeCare Analytics Report", 10, 15);
+      pdf.setFontSize(10);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text(`Rides & Expenses Snapshot · Generated on: ${format(new Date(), 'MMM dd, yyyy')}`, 10, 22);
+      
+      pdf.addImage(dataUrl, 'PNG', 10, 30, pdfWidth, pdfHeight);
+      pdf.save(`bike_analytics_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    } catch(err) {
+      console.error('Error generating pdf', err);
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -109,17 +182,47 @@ export default function AnalyticsPage() {
           <motion.div
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8"
           >
-            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
-              <TrendingUp className="text-cyan-400" /> Analytics Dashboard
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">
-              Visualize your rides and maintenance costs.
-            </p>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="text-cyan-400" /> Analytics Dashboard
+              </h1>
+              <p className="text-slate-400 text-sm mt-1">
+                Visualize your rides and maintenance costs.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDownloadCsv}
+                title="Download CSV"
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-white transition-colors"
+              >
+                <FileSpreadsheet size={18} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDownloadImage}
+                title="Download Image"
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-white transition-colors"
+              >
+                <ImageIcon size={18} />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDownloadPdf}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition-colors"
+              >
+                <FileText size={16} /> Export PDF
+              </motion.button>
+            </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div ref={dashboardRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-1 rounded-2xl">
              <motion.div 
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}

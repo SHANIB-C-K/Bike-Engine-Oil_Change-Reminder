@@ -29,7 +29,6 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showAlert, setShowAlert] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [limitEditing, setLimitEditing] = useState(false);
   const [avgDailyKm, setAvgDailyKm] = useState(0);
 
 
@@ -117,73 +116,6 @@ export default function DashboardPage() {
       console.error("Reset error:", err);
     } finally {
       setResetLoading(false);
-    }
-  };
-
-  const handleLimitSave = async () => {
-    const val = parseInt(newLimit);
-    if (!val || val < 100 || val > 50000) return;
-    setSavingLimit(true);
-    try {
-      const ref = doc(db, "users", user.uid);
-      await updateDoc(ref, { oilChangeLimit: val });
-      await fetchUserData();
-      setLimitEditing(false);
-      setNewLimit("");
-    } catch (err) {
-      console.error("Limit update error:", err);
-    } finally {
-      setSavingLimit(false);
-    }
-  };
-
-  const handleDateSave = async () => {
-    if (!newDate) return;
-    setSavingDate(true);
-    try {
-      const selectedDate = new Date(newDate);
-      const ref = doc(db, "users", user.uid);
-      await updateDoc(ref, { lastOilChangeDate: selectedDate });
-      await fetchUserData();
-      setDateEditing(false);
-      setNewDate("");
-    } catch (err) {
-      console.error("Date update error:", err);
-    } finally {
-      setSavingDate(false);
-    }
-  };
-
-  const handleQuickAddSave = async () => {
-    const val = parseFloat(newQuickAdd);
-    if (!val || val <= 0) return;
-    setSavingQuickAdd(true);
-    try {
-      const ref = doc(db, "users", user.uid);
-      await updateDoc(ref, { quickAddKm: val });
-      await fetchUserData();
-      setQuickAddEditing(false);
-      setNewQuickAdd("");
-    } catch (err) {
-      console.error("Quick add update error:", err);
-    } finally {
-      setSavingQuickAdd(false);
-    }
-  };
-
-  const handlePhoneSave = async () => {
-    if (!newPhone) return; // allows removing? We can skip validation for simplistic approach
-    setSavingPhone(true);
-    try {
-      const ref = doc(db, "users", user.uid);
-      await updateDoc(ref, { mechanicPhone: newPhone });
-      await fetchUserData();
-      setPhoneEditing(false);
-      setNewPhone("");
-    } catch (err) {
-      console.error("Phone update error:", err);
-    } finally {
-      setSavingPhone(false);
     }
   };
 
