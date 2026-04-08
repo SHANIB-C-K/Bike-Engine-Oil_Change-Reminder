@@ -15,11 +15,20 @@ export default function HistoryPage() {
   const router = useRouter();
   const [rides, setRides] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   // Edit / Delete states
   const [editingId, setEditingId] = useState(null);
   const [editKm, setEditKm] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
+
+  // Download time range selector
+  const now = new Date();
+  const [downloadMode, setDownloadMode] = useState("all"); // 'months' | 'year' | 'all'
+  const [selectedMonth, setSelectedMonth] = useState(
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  ); // YYYY-MM
+  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear())); // YYYY
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
@@ -55,6 +64,98 @@ export default function HistoryPage() {
   useEffect(() => {
     if (user) fetchHistory();
   }, [user, fetchHistory]);
+
+  const fetchAllRidesForDownload = useCallback(async () => {
+    if (!user) return [];
+    const q = query(
+      collection(db, "rides"),
+      where("userId", "==", user.uid)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const fetched = [];
+    querySnapshot.forEach((docSnap) => {
+      fetched.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    fetched.sort((a, b) => {
+      const timeA = a.date?.seconds || 0;
+      const timeB = b.date?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    return fetched;
+  }, [user]);
+
+  const getRideDateObj = (ride) => {
+    const d = ride?.date;
+    if (!d) return null;
+    if (typeof d.toDate === "function") return d.toDate();
+    if (typeof d.seconds === "number") return new Date(d.seconds * 1000);
+    const parsed = new Date(d);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const filterRidesByDownloadMode = (allRides) => {
+    if (downloadMode === "all") {
+      return {
+        rides: allRides,
+        label: "All Time",
+        fileSuffix: "all-time",
+      };
+    }
+
+    if (downloadMode === "months") {
+      const parts = (selectedMonth || "").split("-");
+      const year = Number(parts[0]);
+      const monthIndex = Number(parts[1]) - 1; // JS month index
+
+      if (!year || Number.isNaN(year) || monthIndex < 0 || monthIndex > 11) {
+        return {
+          rides: allRides,
+          label: "All Time",
+          fileSuffix: "all-time",
+        };
+      }
+
+      const start = new Date(year, monthIndex, 1);
+      const end = new Date(year, monthIndex + 1, 1); // first day next month
+      const filtered = allRides.filter((r) => {
+        const dt = getRideDateObj(r);
+        return dt && dt >= start && dt < end;
+      });
+
+      const monthLabel = start.toLocaleString("en-US", { month: "long" });
+      return {
+        rides: filtered,
+        label: `${monthLabel} ${year}`,
+        fileSuffix: `${year}-${String(monthIndex + 1).padStart(2, "0")}`,
+      };
+    }
+
+    // downloadMode === "year"
+    const year = Number(selectedYear);
+    if (!year || Number.isNaN(year)) {
+      return {
+        rides: allRides,
+        label: "All Time",
+        fileSuffix: "all-time",
+      };
+    }
+
+    const start = new Date(year, 0, 1);
+    const end = new Date(year + 1, 0, 1);
+    const filtered = allRides.filter((r) => {
+      const dt = getRideDateObj(r);
+      return dt && dt >= start && dt < end;
+    });
+
+    return {
+      rides: filtered,
+      label: String(year),
+      fileSuffix: String(year),
+    };
+  };
 
   const handleDelete = async (rideId, rideKm) => {
     if (!confirm("Are you sure you want to delete this log?")) return;
@@ -93,67 +194,105 @@ export default function HistoryPage() {
   };
 
   const handleDownloadPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    
-    // Paint Page 1 background (slate-900)
-    doc.setFillColor(15, 23, 42); 
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("BikeCare Tracker", 14, 22);
+    setDownloadLoading(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
 
-    doc.setTextColor(168, 85, 247); // Tailwind purple-400 equivalent for print clarity
-    doc.setFontSize(16);
-    doc.text("Rides Report", 14, 30);
-    
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(148, 163, 184); // slate-400
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 40);
-    
-    if (user && user.email) {
-      doc.text(`Rider Account: ${user.email}`, 14, 46);
+      const allRidesForDownload = await fetchAllRidesForDownload();
+      const { rides: filteredRides, label: periodLabel, fileSuffix } =
+        filterRidesByDownloadMode(allRidesForDownload);
+
+      if (!filteredRides.length) {
+        alert(`No rides found for ${periodLabel}.`);
+        return;
+      }
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Paint Page 1 background (slate-900)
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.text("BikeCare Tracker", 14, 22);
+
+      doc.setTextColor(168, 85, 247); // Tailwind purple-400 equivalent for print clarity
+      doc.setFontSize(16);
+      doc.text(`Rides Report · ${periodLabel}`, 14, 30);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(148, 163, 184); // slate-400
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 40);
+
+      if (user && user.email) {
+        doc.text(`Rider Account: ${user.email}`, 14, 46);
+      }
+
+      const tableColumn = ["Date", "Time", "Kilometers Logging"];
+      const tableRows = [];
+
+      filteredRides.forEach((ride) => {
+        const date = getRideDateObj(ride) || new Date();
+        const rDate = date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+        const rTime = date.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const kmVal = typeof ride.km === "number" ? ride.km : Number(ride.km || 0);
+        tableRows.push([rDate, rTime, `${kmVal.toFixed(1)} km`]);
+      });
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 52,
+        theme: "grid",
+        headStyles: {
+          fillColor: [88, 28, 135],
+          textColor: [255, 255, 255],
+          halign: "left",
+          lineColor: [51, 65, 85],
+          lineWidth: 0.1,
+        },
+        bodyStyles: {
+          fillColor: [30, 41, 59],
+          textColor: [226, 232, 240],
+          lineColor: [51, 65, 85],
+          lineWidth: 0.1,
+        },
+        alternateRowStyles: { fillColor: [15, 23, 42] },
+        styles: { fontSize: 10, cellPadding: 5 },
+        willDrawPage: (data) => {
+          // Paint backgrounds on any potentially generated new pages to ensure true dark mode
+          if (data.pageNumber > 1) {
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, pageWidth, pageHeight, "F");
+          }
+        },
+      });
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.text(
+        "Automatically Generated by BikeCare Tracker App",
+        14,
+        doc.lastAutoTable.finalY + 15
+      );
+
+      doc.save(`bikecare_dark_rides_report_${fileSuffix}.pdf`);
+    } finally {
+      setDownloadLoading(false);
     }
-
-    const tableColumn = ["Date", "Time", "Kilometers Logging"];
-    const tableRows = [];
-
-    rides.forEach(ride => {
-      const date = ride.date ? new Date(ride.date.seconds * 1000) : new Date();
-      const rDate = date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-      const rTime = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-      tableRows.push([rDate, rTime, `${ride.km.toFixed(1)} km`]);
-    });
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 52,
-      theme: "grid",
-      headStyles: { fillColor: [88, 28, 135], textColor: [255, 255, 255], halign: 'left', lineColor: [51, 65, 85], lineWidth: 0.1 },
-      bodyStyles: { fillColor: [30, 41, 59], textColor: [226, 232, 240], lineColor: [51, 65, 85], lineWidth: 0.1 },
-      alternateRowStyles: { fillColor: [15, 23, 42] },
-      styles: { fontSize: 10, cellPadding: 5 },
-      willDrawPage: (data) => {
-        // Paint backgrounds on any potentially generated new pages to ensure true dark mode
-        if (data.pageNumber > 1) {
-          doc.setFillColor(15, 23, 42);
-          doc.rect(0, 0, pageWidth, pageHeight, 'F');
-        }
-      },
-    });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139); // slate-500
-    doc.text("Automatically Generated by BikeCare Tracker App", 14, doc.lastAutoTable.finalY + 15);
-
-    doc.save("bikecare_dark_rides_report.pdf");
   };
 
   if (authLoading || dataLoading) {
@@ -195,14 +334,67 @@ export default function HistoryPage() {
               </div>
             </div>
             {rides.length > 0 && (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleDownloadPDF}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold text-sm shadow-lg shadow-purple-500/20 w-fit self-start sm:self-center shrink-0"
-              >
-                <Download size={16} /> PDF Report
-              </motion.button>
+              <div className="flex flex-col items-start sm:items-end gap-3 self-start sm:self-center shrink-0">
+                <div className="flex bg-slate-800 rounded-lg p-1 w-fit border border-white/10">
+                  {[
+                    { id: "months", label: "Months" },
+                    { id: "year", label: "Year" },
+                    { id: "all", label: "All Time" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setDownloadMode(opt.id)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        downloadMode === opt.id
+                          ? "bg-cyan-500 text-white shadow"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
+                      }`}
+                      type="button"
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {downloadMode === "months" && (
+                    <input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="glass-input text-white px-3 py-2 h-9 text-sm w-40"
+                      aria-label="Select month"
+                    />
+                  )}
+                  {downloadMode === "year" && (
+                    <input
+                      type="number"
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      min="2000"
+                      max="2100"
+                      className="glass-input text-white px-3 py-2 h-9 text-sm w-24"
+                      aria-label="Select year"
+                    />
+                  )}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleDownloadPDF}
+                    disabled={downloadLoading}
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold text-sm shadow-lg shadow-purple-500/20 w-fit self-start sm:self-center shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {downloadLoading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Download size={16} /> PDF Report
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </div>
             )}
           </motion.div>
 
