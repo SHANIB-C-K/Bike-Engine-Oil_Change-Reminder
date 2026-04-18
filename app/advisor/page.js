@@ -144,7 +144,7 @@ export default function AIAdvisorPage() {
                  </div>
                  <div>
                     <h3 className="text-xl font-bold text-white mb-2">How can I help you today?</h3>
-                    <p className="text-slate-400 max-w-sm text-sm">I have secure access to your bike's KM, rides, and maintenance history. Ask me anything!</p>
+                    <p className="text-slate-400 max-w-sm text-sm">I have secure access to your bike&apos;s KM, rides, and maintenance history. Ask me anything!</p>
                  </div>
                  
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">

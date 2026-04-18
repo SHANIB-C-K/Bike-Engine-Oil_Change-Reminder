@@ -1,5 +1,4 @@
 "use client";
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Bike, Gauge, Bell, History, ArrowRight, CheckCircle } from "lucide-react";
@@ -35,18 +34,13 @@ const particles = Array.from({ length: 30 }, (_, i) => ({
 }));
 
 export default function LandingPage() {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   return (
     <>
       <Navbar />
       <main className="min-h-screen pt-20">
         {/* Particles */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          {isMounted && particles.map((p) => (
+          {particles.map((p) => (
             <div
               key={p.id}
               className="particle"

@@ -77,7 +77,7 @@ exports.monthlyReportCron = functions.scheduler.onSchedule("0 9 1 * *", async (e
       };
 
       await mailTransport.sendMail(mailOptions);
-      console.log(\`Report sent to \${userEmail}\`);
+      console.log(`Report sent to ${userEmail}`);
     });
 
     await Promise.all(promises);
