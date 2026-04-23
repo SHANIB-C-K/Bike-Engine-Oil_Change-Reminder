@@ -9,6 +9,8 @@ import Navbar from "@/components/Navbar";
 import StatCard from "@/components/StatCard";
 import CircularProgress from "@/components/CircularProgress";
 import DailyRideInput from "@/components/DailyRideInput";
+import OdometerInput from "@/components/OdometerInput";
+import InitialOdometerSetup from "@/components/InitialOdometerSetup";
 import ExpenseInput from "@/components/ExpenseInput";
 import AlertModal from "@/components/AlertModal";
 import { playWarningSound, sendBrowserNotification } from "@/hooks/useNotifications";
@@ -30,6 +32,7 @@ export default function DashboardPage() {
   const [showAlert, setShowAlert] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [avgDailyKm, setAvgDailyKm] = useState(0);
+  const [totalKmFromHistory, setTotalKmFromHistory] = useState(0);
 
 
   const fetchUserData = useCallback(async () => {
@@ -43,7 +46,8 @@ export default function DashboardPage() {
         // Create default doc
         const defaults = {
           email: user.email,
-          totalKm: 0,
+          totalKm: 953.3,
+          lastOdometerReading: 953.3,
           oilChangeLimit: 2000,
           lastResetKm: 0,
           createdAt: serverTimestamp(),
@@ -65,6 +69,16 @@ export default function DashboardPage() {
   const fetchStats = useCallback(async () => {
     if (!user) return;
     try {
+      const allRidesQuery = query(
+        collection(db, "rides"),
+        where("userId", "==", user.uid)
+      );
+      const allRidesSnap = await getDocs(allRidesQuery);
+      let totalSum = 0;
+      allRidesSnap.forEach((d) => {
+        totalSum += Number(d.data().km || 0);
+      });
+      setTotalKmFromHistory(totalSum);
       const twoWeeksAgo = new Date();
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
       const q = query(
@@ -91,8 +105,8 @@ export default function DashboardPage() {
   // Check reminder
   useEffect(() => {
     if (!userData) return;
-    const { totalKm, oilChangeLimit, lastResetKm } = userData;
-    const remaining = oilChangeLimit - (totalKm - lastResetKm);
+    const { oilChangeLimit, lastResetKm } = userData;
+    const remaining = oilChangeLimit - (totalKmFromHistory - lastResetKm);
     if (remaining <= 0) {
         setShowAlert(true);
         if (!showAlert) { // To prevent infinite sounds if it re-renders
@@ -100,17 +114,18 @@ export default function DashboardPage() {
             playWarningSound();
         }
     }
-  }, [userData, showAlert]);
+  }, [userData, showAlert, totalKmFromHistory]);
 
   const handleOilChanged = async () => {
     setResetLoading(true);
     try {
       const ref = doc(db, "users", user.uid);
       await updateDoc(ref, {
-        lastResetKm: userData.totalKm,
+        lastResetKm: totalKmFromHistory,
         lastOilChangeDate: serverTimestamp(),
       });
       await fetchUserData();
+      await fetchStats();
       setShowAlert(false);
     } catch (err) {
       console.error("Reset error:", err);
@@ -135,7 +150,22 @@ export default function DashboardPage() {
 
   if (!user || !userData) return null;
 
-  const { totalKm = 0, oilChangeLimit = 2000, lastResetKm = 0, lastOilChangeDate, quickAddKm = 0, mechanicPhone = "" } = userData;
+  // Show initial odometer setup if not configured
+  const hasInitialOdometer = userData.hasInitialOdometer || userData.lastOdometerReading > 0;
+  if (!hasInitialOdometer) {
+    return (
+      <>
+        <Navbar />
+        <InitialOdometerSetup 
+          onComplete={fetchUserData} 
+          currentOdometerReading={userData.lastOdometerReading || 0}
+        />
+      </>
+    );
+  }
+
+  const { oilChangeLimit = 2000, lastResetKm = 0, lastOilChangeDate, quickAddKm = 0, mechanicPhone = "" } = userData;
+  const totalKm = totalKmFromHistory;
   const kmSinceReset = totalKm - lastResetKm;
   const remainingKm = oilChangeLimit - kmSinceReset;
   const oilUsedPct = Math.min(100, (kmSinceReset / oilChangeLimit) * 100);
@@ -265,17 +295,26 @@ export default function DashboardPage() {
             {/* Right column */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Action Cards (Add Ride & Add Expense) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                 {/* Add ride */}
-                 <DailyRideInput 
-                   onRideAdded={fetchUserData} 
-                   quickAddKm={quickAddKm} 
-                   mechanicPhone={mechanicPhone} 
-                   currentStats={{ totalKm, lastResetKm, oilChangeLimit }}
-                 />
-                 {/* Add expense */}
-                 <ExpenseInput onExpenseAdded={fetchUserData} />
+              {/* Action Cards (Add Ride, Odometer & Add Expense) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 <div className="space-y-6">
+                    {/* Odometer Reading */}
+                    <OdometerInput 
+                      onRideAdded={fetchUserData} 
+                      currentStats={{ totalKm, lastResetKm, oilChangeLimit, lastOdometerReading: userData.lastOdometerReading || 0 }}
+                    />
+                 </div>
+                 <div className="space-y-6">
+                    {/* Add ride */}
+                    <DailyRideInput 
+                      onRideAdded={fetchUserData} 
+                      quickAddKm={quickAddKm} 
+                      mechanicPhone={mechanicPhone} 
+                      currentStats={{ totalKm, lastResetKm, oilChangeLimit }}
+                    />
+                    {/* Add expense */}
+                    <ExpenseInput onExpenseAdded={fetchUserData} />
+                 </div>
               </div>
 
               {/* Smart Prediction Engine */}

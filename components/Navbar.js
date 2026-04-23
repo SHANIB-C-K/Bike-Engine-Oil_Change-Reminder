@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,7 +69,7 @@ export default function Navbar() {
                 ))}
               </div>
 
-              {/* Auth Buttons */}
+              {/* Auth Buttons (Desktop) */}
               <div className="hidden md:flex items-center gap-3">
                 {user ? (
                   <div className="flex items-center gap-3">
@@ -95,49 +95,81 @@ export default function Navbar() {
 
               {/* Mobile menu toggle */}
               <button
-                className="md:hidden text-slate-400 hover:text-white p-2"
+                className="md:hidden text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition-all"
                 onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label="Toggle menu"
               >
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
           </div>
 
-          {/* Mobile menu */}
-          {mobileOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-white/5 px-4 py-4 space-y-2 glass"
-            >
-              <div className="space-y-1 mb-4">
-                {user ? (
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all font-medium"
-                  >
-                    <LogOut size={18} /> Logout
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-center gap-3 w-full py-3 rounded-xl text-sm btn-glow text-white font-medium"
-                  >
-                    <LogIn size={18} /> Login
-                  </Link>
+          {/* ✅ FIXED: Mobile hamburger menu now shows all nav links */}
+          <AnimatePresence>
+            {mobileOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="md:hidden border-t border-white/5 px-4 py-4 glass overflow-hidden"
+              >
+                {navLinks.length > 0 && (
+                  <div className="space-y-1 mb-3">
+                    {navLinks.map(({ href, label, icon: Icon }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                          pathname === href
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/20"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <Icon size={18} />
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
                 )}
-              </div>
-            </motion.div>
-          )}
+
+                <div className="border-t border-white/5 pt-3">
+                  {user ? (
+                    <>
+                      <div className="flex items-center gap-3 px-4 py-2 mb-2">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold">
+                          {user.email?.[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-slate-400 text-sm truncate">{user.email}</span>
+                      </div>
+                      <button
+                        onClick={() => { handleLogout(); setMobileOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all font-medium"
+                      >
+                        <LogOut size={18} /> Logout
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center gap-3 w-full py-3 rounded-xl text-sm btn-glow text-white font-medium"
+                    >
+                      <LogIn size={18} /> Login
+                    </Link>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.nav>
 
       {/* Modern Bottom Navbar (Mobile Only) */}
       {user && (
         <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 pointer-events-none">
-          <motion.div 
+          <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, type: "spring", bounce: 0.4 }}
@@ -152,17 +184,17 @@ export default function Navbar() {
                   className="flex-1 flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-300 relative group"
                 >
                   {isActive && (
-                    <motion.div 
+                    <motion.div
                       layoutId="bottomNavIndicator"
                       className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 to-blue-500/20 rounded-[20px] border border-white/5"
                       initial={false}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <div className={`relative z-10 p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'text-purple-300 transform scale-110' : 'text-slate-400 group-hover:text-white group-hover:scale-105'}`}>
-                    <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                  <div className={`relative z-10 p-1 rounded-xl transition-all duration-300 ${isActive ? "text-purple-300 transform scale-110" : "text-slate-400 group-hover:text-white group-hover:scale-105"}`}>
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                   </div>
-                  <span className={`text-[10px] font-semibold tracking-wide relative z-10 transition-colors duration-300 ${isActive ? 'text-purple-300' : 'text-slate-500'}`}>
+                  <span className={`text-[9px] font-semibold tracking-wide relative z-10 transition-colors duration-300 ${isActive ? "text-purple-300" : "text-slate-500"}`}>
                     {label}
                   </span>
                 </Link>

@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Bike, Gauge, Bell, History, ArrowRight, CheckCircle } from "lucide-react";
+import { Bike, Gauge, Bell, History, ArrowRight, CheckCircle, Sparkles, BarChart2, Zap, TrendingUp, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 
 const features = [
@@ -23,17 +24,42 @@ const features = [
     desc: "Browse all past rides with dates and distances in a clean timeline.",
     color: "cyan",
   },
+  {
+    icon: Sparkles,
+    title: "AI Mechanic Advisor",
+    desc: "Chat with an AI trained on your bike data for personalized maintenance tips.",
+    color: "violet",
+  },
+  {
+    icon: BarChart2,
+    title: "Expense Analytics",
+    desc: "Visualize your fuel, service and parts spending with beautiful charts.",
+    color: "emerald",
+  },
+  {
+    icon: Zap,
+    title: "Smart Predictions",
+    desc: "Based on your riding patterns, predict exactly when your next oil change is due.",
+    color: "amber",
+  },
 ];
 
-const particles = Array.from({ length: 30 }, (_, i) => ({
-  id: i,
-  size: Math.random() * 3 + 1,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  delay: Math.random() * 4,
-}));
+
 
 export default function LandingPage() {
+  const [particles, setParticles] = useState([]);
+
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 30 }, (_, i) => ({
+        id: i,
+        size: Math.random() * 3 + 1,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        delay: Math.random() * 4,
+      }))
+    );
+  }, []);
   return (
     <>
       <Navbar />
@@ -130,8 +156,9 @@ export default function LandingPage() {
                 {[
                   { label: "Total KM", val: "12,450", color: "text-purple-400" },
                   { label: "Oil Used", val: "73%", color: "text-yellow-400" },
-                  { label: "Next Change", val: "810 km", color: "text-green-400" },
+                  { label: "Next Change", val: "540 km", color: "text-green-400" },
                 ].map((s, i) => (
+
                   <div key={i} className="glass rounded-2xl p-4 border border-white/5 text-center">
                     <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
                     <p className="text-xs text-slate-500 mt-1">{s.label}</p>
@@ -151,7 +178,7 @@ export default function LandingPage() {
                       className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">Oil change progress · 1,460 of 2,000 km</p>
+                  <p className="text-xs text-slate-500 mt-2">Oil change progress · 540 of 2,000 km</p>
                 </div>
               </div>
             </div>
@@ -178,14 +205,14 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {features.map((f, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
                 whileHover={{ y: -6, scale: 1.01 }}
                 className="glass rounded-2xl p-7 border border-white/8 glass-hover group"
               >
@@ -195,7 +222,13 @@ export default function LandingPage() {
                       ? "from-purple-500/30 to-purple-600/10 text-purple-400"
                       : f.color === "blue"
                       ? "from-blue-500/30 to-blue-600/10 text-blue-400"
-                      : "from-cyan-500/30 to-cyan-600/10 text-cyan-400"
+                      : f.color === "cyan"
+                      ? "from-cyan-500/30 to-cyan-600/10 text-cyan-400"
+                      : f.color === "violet"
+                      ? "from-violet-500/30 to-violet-600/10 text-violet-400"
+                      : f.color === "emerald"
+                      ? "from-emerald-500/30 to-emerald-600/10 text-emerald-400"
+                      : "from-amber-500/30 to-amber-600/10 text-amber-400"
                   }`}
                 >
                   <f.icon size={22} />

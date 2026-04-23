@@ -108,17 +108,13 @@ export default function DailyRideInput({ onRideAdded, quickAddKm = 0, mechanicPh
     setLoading(true);
 
     try {
-      // Add ride doc
+      // Add ride doc (totalKm is now calculated from ride history)
       await addDoc(collection(db, "rides"), {
         userId: user.uid,
         km: kmVal,
         meterImage: imgUrl || null,
         date: serverTimestamp(),
       });
-
-      // Update user totalKm
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { totalKm: increment(kmVal) });
 
       setKm("");
       playSuccessSound();
