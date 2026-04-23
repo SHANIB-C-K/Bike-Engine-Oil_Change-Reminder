@@ -398,12 +398,66 @@ export default function HistoryPage() {
             )}
           </motion.div>
 
-          {/* Calendar View */}
-          <div className="mb-8">
+          {/* Streak Counter & Calendar Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+             {/* Streak Counter */}
              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-2xl p-5 sm:p-6 border border-white/8 overflow-hidden"
+                className="glass rounded-2xl p-6 border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-red-500/5 flex flex-col items-center justify-center text-center group"
+             >
+                <div className="w-16 h-16 rounded-full bg-orange-500/20 flex items-center justify-center mb-4 border border-orange-500/30 group-hover:scale-110 transition-transform">
+                   <span className="text-3xl">🔥</span>
+                </div>
+                <h3 className="text-slate-300 text-sm font-medium uppercase tracking-wider mb-1">Current Streak</h3>
+                <div className="flex items-end justify-center gap-1">
+                   <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+                      {(() => {
+                         if (!rides || rides.length === 0) return 0;
+                         let streak = 0;
+                         let currentDate = new Date();
+                         currentDate.setHours(0, 0, 0, 0);
+
+                         // Create a set of unique date strings (YYYY-MM-DD)
+                         const rideDates = new Set(rides.map(r => {
+                            const d = r.date ? new Date(r.date.seconds * 1000) : new Date();
+                            return d.toISOString().split('T')[0];
+                         }));
+
+                         // Check if rode today or yesterday to start streak
+                         const todayStr = currentDate.toISOString().split('T')[0];
+                         const yesterday = new Date(currentDate);
+                         yesterday.setDate(yesterday.getDate() - 1);
+                         const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                         if (!rideDates.has(todayStr) && !rideDates.has(yesterdayStr)) {
+                            return 0; // Streak broken
+                         }
+
+                         // Count backwards
+                         let checkDate = new Date(rideDates.has(todayStr) ? currentDate : yesterday);
+                         while (true) {
+                            const checkStr = checkDate.toISOString().split('T')[0];
+                            if (rideDates.has(checkStr)) {
+                               streak++;
+                               checkDate.setDate(checkDate.getDate() - 1);
+                            } else {
+                               break;
+                            }
+                         }
+                         return streak;
+                      })()}
+                   </span>
+                   <span className="text-slate-400 font-medium mb-1">days</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-4">Ride every day to keep the fire burning!</p>
+             </motion.div>
+
+             {/* Calendar View */}
+             <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-2xl p-5 sm:p-6 border border-white/8 overflow-hidden md:col-span-2"
              >
                 <style>{`
                   .react-calendar { background: transparent; border: none; font-family: inherit; width: 100%; color: white; }

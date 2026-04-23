@@ -12,6 +12,7 @@ import DailyRideInput from "@/components/DailyRideInput";
 import OdometerInput from "@/components/OdometerInput";
 import InitialOdometerSetup from "@/components/InitialOdometerSetup";
 import ExpenseInput from "@/components/ExpenseInput";
+import MaintenanceChecklist from "@/components/MaintenanceChecklist";
 import AlertModal from "@/components/AlertModal";
 import { playWarningSound, sendBrowserNotification } from "@/hooks/useNotifications";
 import {
@@ -167,9 +168,9 @@ export default function DashboardPage() {
   const { oilChangeLimit = 2000, lastResetKm = 0, lastOilChangeDate, quickAddKm = 0, mechanicPhone = "" } = userData;
   const totalKm = totalKmFromHistory;
   const kmSinceReset = totalKm - lastResetKm;
-  const remainingKm = oilChangeLimit - kmSinceReset;
+  const remainingKm = Math.max(0, oilChangeLimit - kmSinceReset);
   const oilUsedPct = Math.min(100, (kmSinceReset / oilChangeLimit) * 100);
-  const isDue = remainingKm <= 0;
+  const isDue = (oilChangeLimit - kmSinceReset) <= 0;
 
   const lastOilStr = lastOilChangeDate
     ? new Date(
@@ -243,7 +244,7 @@ export default function DashboardPage() {
             <StatCard
               icon={Droplets}
               label="Remaining KM"
-              value={isDue ? "0 km" : `${remainingKm.toFixed(0)} km`}
+              value={`${remainingKm.toFixed(0)} km`}
               sub={isDue ? "Oil change overdue!" : "Until oil change"}
               color={isDue ? "purple" : "blue"}
               delay={0.1}
@@ -354,6 +355,14 @@ export default function DashboardPage() {
                  </div>
               </motion.div>
 
+              {/* Maintenance Checklist Component */}
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              >
+                <MaintenanceChecklist />
+              </motion.div>
 
             </div>
           </div>
