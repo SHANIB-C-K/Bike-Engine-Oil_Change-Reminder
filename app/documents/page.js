@@ -128,10 +128,18 @@ export default function DocumentsPage() {
         createdAt: serverTimestamp(),
       });
 
-      const ext = selectedFile.name.split(".").pop() || "file";
-      const fileRef = ref(storage, `documents/${user.uid}/${activeBikeId}/${docRef.id}.${ext}`);
-      await uploadBytes(fileRef, selectedFile, { contentType: selectedFile.type });
-      const fileUrl = await getDownloadURL(fileRef);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const uploadData = await res.json();
+      if (!uploadData.success) throw new Error("Local upload failed");
+      
+      const fileUrl = uploadData.url;
 
       await updateDoc(doc(db, "users", user.uid, "bikes", activeBikeId, "documents", docRef.id), {
         fileUrl,
@@ -338,9 +346,17 @@ export default function DocumentsPage() {
                   <X size={16} />
                 </button>
               </div>
-              <div className="bg-black/60 p-3 h-[75vh]">
+              <div className="bg-black/60 p-3 h-[75vh] relative flex flex-col items-center justify-center rounded-b-2xl">
                 {(viewerDoc.fileName?.toLowerCase().endsWith('.pdf') || viewerDoc.fileUrl?.toLowerCase().includes('.pdf')) ? (
-                  <iframe src={viewerDoc.fileUrl} className="w-full h-full rounded-lg bg-white" title={viewerDoc.fileName} />
+                  <object data={viewerDoc.fileUrl} type="application/pdf" className="w-full h-full rounded-lg bg-white relative z-10">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-0 bg-slate-900 rounded-lg">
+                      <FileText size={48} className="text-slate-400 mb-4" />
+                      <p className="text-slate-300 mb-4 font-medium">Your browser blocked the inline PDF preview.</p>
+                      <a href={viewerDoc.fileUrl} target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 rounded-xl btn-glow text-white font-semibold">
+                        Download PDF
+                      </a>
+                    </div>
+                  </object>
                 ) : (
                   <img src={viewerDoc.fileUrl} alt={viewerDoc.fileName} className="w-full h-full object-contain rounded-lg" />
                 )}

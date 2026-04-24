@@ -1,23 +1,36 @@
 # 🏍️ BikeCare Tracker
 
-A smart motorcycle maintenance app that tracks your daily rides and sends oil change reminders based on kilometers driven.
+<p align="center">
+  <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js"></a>
+  <a href="https://firebase.google.com"><img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase"></a>
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-61DAFF?style=for-the-badge&logo=react&logoColor=black" alt="React"></a>
+  <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-38BDF8?style=for-the-badge&logo=tailwind-css&logoColor=black" alt="Tailwind"></a>
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
+</p>
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase)
-![License](https://img.shields.io/badge/License-MIT-green)
+> A smart motorcycle maintenance tracker that logs your daily rides and sends intelligent oil change reminders based on kilometers driven.
 
-## Features
+## ✨ Features
 
-- **📍 Daily Ride Tracking** - Log kilometers for each ride with date and notes
-- **🔔 Smart Reminders** - Get notified when it's time for an oil change
-- **📊 Analytics Dashboard** - View ride history and expense stats
-- **🤖 AI Advisor** - Ask questions about your bike maintenance
-- **📄 PDF Reports** - Download ride history as PDF
-- **🔍 OCR Meter Reading** - Upload meter photos to auto-read kilometers
+| Feature | Description |
+|---------|-------------|
+| 📍 **Ride Tracking** | Log kilometers for each ride with date, notes, and bike selection |
+| 🔔 **Smart Reminders** | Get notified when it's time for an oil change |
+| 📊 **Analytics Dashboard** | View ride history, expense stats, and maintenance trends |
+| 🤖 **AI Advisor** | Chat with AI about your bike maintenance |
+| 📄 **PDF Reports** | Export ride history as PDF documents |
+| ⛽ **Fuel Tracking** | Track fuel expenses and consumption |
+| 🔧 **Maintenance Log** | Record all bike maintenance activities |
+| 🛠️ **Service Checklists** | Pre-built maintenance checklists |
+| 🔍 **OCR Reading** | Upload meter photos to auto-read kilometers |
 
-## Getting Started
+## 🚀 Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/your-username/bikecare-tracker.git
+cd bikecare-tracker
+
 # Install dependencies
 npm install
 
@@ -27,9 +40,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Environment Setup
+## ⚙️ Environment Setup
 
-Create `.env.local` with your Firebase config:
+Create a `.env.local` file in the root directory:
 
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
@@ -40,29 +53,49 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
 ```
 
-## Tech Stack
+## 🏗️ Tech Stack
 
-- **Frontend**: Next.js 16, React, Tailwind CSS
-- **Backend**: Firebase Auth, Firestore, Cloud Functions
-- **Utilities**: Framer Motion, Recharts, jsPDF, Tesseract.js
+<div align="center">
+  <table>
+    <tr>
+      <td><strong>Frontend</strong></td>
+      <td>Next.js 16 • React 18 • Tailwind CSS</td>
+    </tr>
+    <tr>
+      <td><strong>Backend</strong></td>
+      <td>Firebase Auth • Firestore • Cloud Functions</td>
+    </tr>
+    <tr>
+      <td><strong>Utilities</strong></td>
+      <td>Framer Motion • Recharts • jsPDF • Tesseract.js</td>
+    </tr>
+  </table>
+</div>
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes
-│   ├── dashboard/         # Main dashboard
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes (AI, etc.)
+│   ├── dashboard/        # Main dashboard
 │   ├── history/          # Ride history
-│   ├── analytics/        # Statistics
-│   ├── advisor/          # AI chat
-│   └── settings/         # App settings
+│   ├── analytics/       # Statistics & charts
+│   ├── advisor/         # AI maintenance chat
+│   ├── bikes/            # Bike management
+│   ├── fuel/            # Fuel tracking
+│   ├── maintenance/      # Maintenance logs
+│   ├── services/        # Service records
+│   ├── checklists/      # Maintenance checklists
+│   ├── documents/       # Document & PDF exports
+│   ├── settings/        # App settings
+│   └── login/           # Authentication
 ├── components/           # Reusable UI components
-├── hooks/               # Custom React hooks
-├── lib/                 # Firebase & utilities
-└── functions/          # Firebase Cloud Functions
+├── hooks/                # Custom React hooks
+├── lib/                  # Firebase & utilities
+└── functions/            # Firebase Cloud Functions
 ```
 
-## Available Scripts
+## 📜 Available Scripts
 
 | Command | Description |
 |---------|-------------|
@@ -71,17 +104,17 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
 
-## Firebase Setup
+## 🔥 Firebase Setup
 
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable **Authentication** (Email/Password)
+2. Enable **Authentication** (Email/Password provider)
 3. Enable **Cloud Firestore**
-4. Create web app and copy config to `.env.local`
+4. Create a web app and copy config to `.env.local`
 
 ### Firestore Security Rules
 
 ```javascript
-rules version = 2;
+rules version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId} {
@@ -94,34 +127,36 @@ service cloud.firestore {
 }
 ```
 
-## Deploy
+## 🔗 Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page |
+| `/login` | Authentication |
+| `/dashboard` | Main dashboard |
+| `/history` | Ride history |
+| `/analytics` | Statistics & charts |
+| `/advisor` | AI maintenance chat |
+| `/bikes` | Bike management |
+| `/fuel` | Fuel tracking |
+| `/maintenance` | Maintenance logs |
+| `/services` | Service records |
+| `/checklists` | Maintenance checklists |
+| `/documents` | Document exports |
+| `/settings` | App settings |
+
+## 🚢 Deploy
 
 Deploy to Vercel with one click:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-repo)
 
-## Pages
+## 📜 License
 
-| Route | Description |
-|-------|------------|
-| `/` | Landing page |
-| `/login` | Authentication |
-| `/dashboard` | Main dashboard |
-| `/history` | Ride history |
-| `/analytics` | Stats & charts |
-| `/advisor` | AI maintenance chat |
-| `/settings` | App settings |
-
-## License
-
-MIT
-
-## Screenshots
-
-| Dashboard | Analytics |
-|-----------|-----------|
-| Main ride tracking view | Ride statistics |
+MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-<p align="center">Built with ❤️ for bike enthusiasts</p>
+<p align="center">
+  Built with ❤️ for bike enthusiasts
+</p>
