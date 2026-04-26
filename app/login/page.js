@@ -12,6 +12,8 @@ import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { Bike, Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,6 +24,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const createUserDoc = async (user) => {
     const ref = doc(db, "users", user.uid);
