@@ -13,10 +13,13 @@ export const metadata = {
   keywords: "bike tracker, oil change reminder, motorcycle maintenance, daily ride tracker",
   icons: {
     icon: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.png", type: "image/png", sizes: "256x256" },
     ],
-    apple: "/logo.png",
+    apple: [{ url: "/logo.png", sizes: "180x180", type: "image/png" }],
     shortcut: "/logo.png",
+    other: [
+      { rel: "icon", url: "/logo.png" },
+    ],
   },
 };
 
@@ -24,6 +27,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.className}>
       <head>
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="shortcut icon" type="image/png" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body suppressHydrationWarning>
         <AuthProvider>
