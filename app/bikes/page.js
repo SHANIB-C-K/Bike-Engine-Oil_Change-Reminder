@@ -6,7 +6,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveBike } from "@/hooks/useActiveBike";
 import Navbar from "@/components/Navbar";
-import { Bike, Loader2, Pencil, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import VehicleLoader from "@/components/VehicleLoader";
+import { Bike, Pencil, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const emptyForm = {
@@ -123,7 +124,7 @@ export default function BikesPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 size={28} className="text-purple-400 animate-spin" />
+        <VehicleLoader />
       </div>
     );
   }
