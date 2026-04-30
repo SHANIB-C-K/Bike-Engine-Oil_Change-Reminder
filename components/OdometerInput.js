@@ -16,6 +16,7 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
   const [newReading, setNewReading] = useState("");
   const [loading, setLoading] = useState(false);
   const [showCalculation, setShowCalculation] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const lastOdometerReading = currentStats?.lastOdometerReading || 0;
   const calculatedKm = newReading ? Math.max(0, parseFloat(newReading) - lastOdometerReading) : 0;
@@ -171,6 +172,42 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
     }
   };
 
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!activeBikeId) {
+      toast.error("Select a bike first.");
+      return;
+    }
+    if (!newReading || parseFloat(newReading) < 0) {
+      toast.error("Please enter a valid odometer reading.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const reading = parseFloat(newReading);
+      const bikeRef = doc(db, "users", user.uid, "bikes", activeBikeId);
+      await updateDoc(bikeRef, {
+        lastOdometerReading: reading,
+      });
+
+      setNewReading("");
+      setShowCalculation(false);
+      setIsEditMode(false);
+      playSuccessSound();
+      toast.success(`Odometer updated to ${reading} km`);
+
+      if (onRideAdded) {
+        setTimeout(() => onRideAdded(), 500);
+      }
+    } catch (err) {
+      toast.error("Failed to update odometer reading.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -212,11 +249,20 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
             transition={{ duration: 0.2 }}
             className="overflow-hidden border-t border-white/5"
           >
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Current Odometer Reading
+            <form onSubmit={isEditMode ? handleUpdate : handleSubmit} className="p-6 space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-slate-300">
+                  {isEditMode ? "Correct Odometer Reading" : "Current Odometer Reading"}
                 </label>
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditMode(!isEditMode)} 
+                  className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                >
+                  {isEditMode ? "Switch to Add Log Mode" : "Correct / Update Reading"}
+                </button>
+              </div>
+              <div>
                 <div className="relative">
                   <input
                     type="number"
@@ -225,10 +271,10 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
                       setNewReading(e.target.value);
                       setShowCalculation(true);
                     }}
-                    placeholder={lastOdometerReading > 0 ? `Above ${lastOdometerReading}` : "Enter reading (e.g. 12450)"}
+                    placeholder={!isEditMode && lastOdometerReading > 0 ? `Above ${lastOdometerReading}` : "Enter reading (e.g. 12450)"}
                     className="glass-input pr-12"
                     min="0"
-                    step="1"
+                    step="0.1"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">
                     km
@@ -238,7 +284,7 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
 
               {/* Calculation Preview */}
               <AnimatePresence>
-                {showCalculation && newReading && (
+                {showCalculation && newReading && !isEditMode && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -271,7 +317,7 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
 
               <motion.button
                 type="submit"
-                disabled={loading || !newReading || calculatedKm <= 0}
+                disabled={loading || !newReading || (!isEditMode && calculatedKm <= 0)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 className="w-full btn-glow text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
@@ -281,11 +327,13 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
                 ) : (
                   <Gauge size={18} />
                 )}
-                {loading ? "Adding..." : `Add ${calculatedKm.toFixed(1)} km`}
+                {loading ? (isEditMode ? "Updating..." : "Adding...") : (isEditMode ? "Update Reading" : `Add ${calculatedKm.toFixed(1)} km`)}
               </motion.button>
 
               <p className="text-xs text-slate-500 text-center pt-2">
-                This will add {calculatedKm.toFixed(1)} km to your total and update your odometer record.
+                {isEditMode 
+                  ? "This will correct your odometer reading without adding a new log." 
+                  : `This will add ${calculatedKm.toFixed(1)} km to your total and update your odometer record.`}
               </p>
             </form>
           </motion.div>
