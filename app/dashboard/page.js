@@ -319,31 +319,35 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: -16 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12"
           >
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                {activeBike?.name || "Your Bike"} Dashboard 👋
+            <div className="absolute -top-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl opacity-50 pointer-events-none mix-blend-screen"></div>
+            <div className="relative z-10">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                 <p className="text-cyan-400 font-semibold tracking-wider text-xs uppercase mb-2 ml-1">Welcome Back</p>
+              </motion.div>
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-2">
+                <span className="gradient-text">{activeBike?.name || "Your Bike"}</span> Hub
               </h1>
-              <p className="text-slate-400 text-sm mt-1">
+              <p className="text-slate-400 text-base sm:text-lg max-w-lg">
                 {isDue ? (
-                  <span className="text-red-400 font-medium">⚠️ Oil change is overdue!</span>
+                  <span className="text-red-400 font-medium flex items-center gap-2"><AlertTriangle size={18}/> Oil change is overdue! Immediate action required.</span>
                 ) : (
-                  "Your bike health at a glance."
+                  "Monitor performance, track maintenance, and keep your ride in peak condition."
                 )}
               </p>
             </div>
             {isDue && (
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowAlert(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold text-sm shadow-lg shadow-red-500/30"
+                className="relative z-10 flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold text-sm shadow-[0_0_40px_rgba(239,68,68,0.4)] border border-red-400/50 hover:shadow-[0_0_60px_rgba(239,68,68,0.6)] transition-all"
               >
-                <RefreshCw size={15} /> Reset Oil Change
+                <RefreshCw size={18} /> Reset Oil Change
               </motion.button>
             )}
           </motion.div>
@@ -544,31 +548,35 @@ export default function DashboardPage() {
 
               {/* Smart Prediction Engine */}
               <motion.div
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="glass rounded-2xl p-6 border border-white/8 relative overflow-hidden"
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="glass rounded-3xl p-8 relative overflow-hidden group"
               >
-                 <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <CalendarDays size={100} />
+                 <div className="absolute -right-10 -top-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all duration-700 pointer-events-none"></div>
+                 <div className="absolute top-0 right-0 p-6 opacity-5 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 pointer-events-none">
+                    <CalendarDays size={120} />
                  </div>
-                 <h3 className="text-lg font-semibold text-white mb-2 relative z-10 flex items-center gap-2">
-                     <CalendarDays className="text-cyan-400" size={18} /> Smart Predictor
+                 <h3 className="text-xl font-bold text-white mb-2 relative z-10 flex items-center gap-3">
+                     <div className="p-2 bg-cyan-500/20 rounded-xl border border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+                        <CalendarDays size={20} />
+                     </div>
+                     Smart Predictor
                  </h3>
-                 <p className="text-sm text-slate-400 mb-6 relative z-10">
-                     Based on your 14-day riding average of <span className="text-white font-mono">{avgDailyKm.toFixed(1)} km/day</span>
+                 <p className="text-sm text-slate-400 mb-8 relative z-10">
+                     Based on your 14-day riding average of <span className="text-white font-mono bg-white/5 px-2 py-1 rounded-md border border-white/10">{avgDailyKm.toFixed(1)} km/day</span>
                  </p>
                  
-                 <div className="grid grid-cols-2 gap-4 relative z-10">
-                    <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5">
-                        <p className="text-xs text-slate-500 mb-1">Estimated Days Left</p>
-                        <p className="text-2xl font-bold text-white">
-                           {avgDailyKm > 0 ? Math.max(0, Math.ceil(remainingKm / avgDailyKm)) : "--"} <span className="text-sm font-normal text-slate-400">days</span>
+                 <div className="grid grid-cols-2 gap-6 relative z-10">
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900/80 to-slate-900/40 border border-white/5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] hover:border-white/10 transition-colors">
+                        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Estimated Days Left</p>
+                        <p className="text-3xl font-bold text-white flex items-baseline gap-1">
+                           {avgDailyKm > 0 ? Math.max(0, Math.ceil(remainingKm / avgDailyKm)) : "--"} <span className="text-sm font-medium text-slate-400">days</span>
                         </p>
                     </div>
-                    <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5">
-                        <p className="text-xs text-slate-500 mb-1">Estimated Date</p>
-                        <p className="text-lg font-bold text-cyan-400 mt-1">
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-cyan-900/30 to-blue-900/10 border border-cyan-500/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] hover:border-cyan-500/40 transition-colors">
+                        <p className="text-xs text-cyan-500/70 mb-2 uppercase tracking-wider font-semibold">Estimated Date</p>
+                        <p className="text-xl font-bold text-cyan-400 mt-1">
                            {avgDailyKm > 0 ? (
                               remainingKm > 0 ? new Date(Date.now() + (remainingKm / avgDailyKm) * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", {
                                 month: "short", day: "numeric", year: "numeric"

@@ -189,16 +189,20 @@ export default function MaintenanceChecklist() {
       className="space-y-6"
     >
       {/* Header */}
-      <div className="glass rounded-2xl p-6 border border-white/8">
+      <div className="glass rounded-3xl p-7 border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] mb-6 hover:border-white/10 transition-colors">
         <div className="flex items-center justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <CheckSquare size={20} className="text-blue-400" /> Maintenance
-              Checklists
-            </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Stay organized with task checklists
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/10 border border-blue-500/20 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(59,130,246,0.2)]">
+              <CheckSquare size={20} className="text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Maintenance Checklists
+              </h2>
+              <p className="text-sm text-slate-400 font-medium mt-1">
+                Stay organized with task checklists
+              </p>
+            </div>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -266,24 +270,24 @@ export default function MaintenanceChecklist() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="glass rounded-2xl p-6 border border-white/8"
+                className="glass rounded-3xl p-7 border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:border-white/10 transition-all"
               >
-                <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-start justify-between gap-4 mb-6">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white">
+                    <h3 className="text-lg font-bold text-white tracking-tight">
                       {checklist.name}
                     </h3>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <p className="text-sm text-slate-400 font-medium mt-1">
                       {completedCount} of {checklist.items.length} completed
                     </p>
 
                     {/* Progress bar */}
-                    <div className="mt-3 w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div className="mt-4 w-full bg-slate-900/50 rounded-full h-2.5 overflow-hidden border border-white/5 shadow-inner">
                       <motion.div
-                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.5 }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
                       />
                     </div>
                   </div>

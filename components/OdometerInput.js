@@ -212,20 +212,21 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.35 }}
-      className="glass rounded-2xl border border-white/8 overflow-hidden"
+      transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
+      className="glass rounded-3xl border border-white/5 overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.12)] group hover:border-white/10 transition-colors"
     >
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-6 flex items-center justify-between hover:bg-white/5 transition-colors"
+        className="w-full p-7 flex items-center justify-between hover:bg-white/[0.02] transition-colors relative"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl btn-glow flex items-center justify-center">
-            <Gauge size={18} className="text-white" />
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/0 group-hover:from-cyan-500/5 group-hover:to-blue-500/5 transition-all duration-500"></div>
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(6,182,212,0.2)]">
+            <Gauge size={20} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
           </div>
           <div className="text-left">
-            <h3 className="font-semibold text-white">Odometer Reading</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="font-bold text-white text-lg tracking-tight">Odometer Reading</h3>
+            <p className="text-sm text-slate-400 font-medium">
               {lastOdometerReading > 0
                 ? `Last: ${lastOdometerReading.toLocaleString()} km`
                 : "Set your first reading"}
@@ -234,9 +235,10 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
         </div>
         <motion.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="relative z-10 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10"
         >
-          <ChevronDown size={20} className="text-slate-400" />
+          <ChevronDown size={16} className="text-slate-300" />
         </motion.div>
       </button>
 
@@ -286,27 +288,27 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
               <AnimatePresence>
                 {showCalculation && newReading && !isEditMode && (
                   <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="p-4 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20"
+                    initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                    className="p-5 rounded-2xl bg-gradient-to-r from-cyan-900/30 to-blue-900/20 border border-cyan-500/20 shadow-inner"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-slate-300 text-sm">Last Reading</span>
-                      <span className="text-white font-mono font-semibold">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-slate-400 text-sm font-medium">Last Reading</span>
+                      <span className="text-white font-mono font-semibold bg-white/5 px-2 py-1 rounded">
                         {lastOdometerReading.toLocaleString()} km
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
-                      <span className="text-slate-300 text-sm">New Reading</span>
-                      <span className="text-white font-mono font-semibold">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
+                      <span className="text-slate-400 text-sm font-medium">New Reading</span>
+                      <span className="text-white font-mono font-semibold bg-white/5 px-2 py-1 rounded">
                         {newReading ? parseInt(newReading).toLocaleString() : "0"} km
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300 text-sm font-medium">Km Ridden</span>
-                      <span className={`font-mono font-bold text-lg ${
-                        calculatedKm > 0 ? "text-green-400" : "text-slate-500"
+                      <span className="text-cyan-300 text-sm font-bold uppercase tracking-wider">Km Ridden</span>
+                      <span className={`font-mono font-extrabold text-xl ${
+                        calculatedKm > 0 ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "text-slate-500"
                       }`}>
                         +{calculatedKm.toFixed(1)} km
                       </span>
@@ -319,18 +321,18 @@ export default function OdometerInput({ onRideAdded, currentStats, mechanicPhone
                 type="submit"
                 disabled={loading || !newReading || (!isEditMode && calculatedKm <= 0)}
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full btn-glow text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                whileTap={{ scale: 0.98 }}
+                className="w-full btn-glow text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-base tracking-wide"
               >
                 {loading ? (
-                  <Loader2 size={18} className="animate-spin" />
+                  <Loader2 size={20} className="animate-spin" />
                 ) : (
-                  <Gauge size={18} />
+                  <Gauge size={20} />
                 )}
                 {loading ? (isEditMode ? "Updating..." : "Adding...") : (isEditMode ? "Update Reading" : `Add ${calculatedKm.toFixed(1)} km`)}
               </motion.button>
 
-              <p className="text-xs text-slate-500 text-center pt-2">
+              <p className="text-xs text-slate-500 text-center pt-2 font-medium">
                 {isEditMode 
                   ? "This will correct your odometer reading without adding a new log." 
                   : `This will add ${calculatedKm.toFixed(1)} km to your total and update your odometer record.`}

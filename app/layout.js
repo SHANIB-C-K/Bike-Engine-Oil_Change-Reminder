@@ -280,6 +280,7 @@ export default function RootLayout({ children }) {
           <ActiveBikeProvider>
             <FcmInitializer />
             <div className="bg-mesh" aria-hidden="true" />
+            <div className="bg-mesh-grid" aria-hidden="true" />
             <div className="relative z-10 w-full overflow-x-hidden min-h-screen">
               {children}
             </div>

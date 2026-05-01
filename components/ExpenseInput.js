@@ -54,16 +54,16 @@ export default function ExpenseInput({ onExpenseAdded }) {
     <motion.div
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.35 }}
-      className="glass rounded-2xl p-6 border border-white/8"
+      transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
+      className="glass rounded-3xl p-7 border border-white/5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:border-white/10 transition-colors"
     >
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-          <IndianRupee size={18} className="text-emerald-400" />
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(16,185,129,0.2)]">
+          <IndianRupee size={20} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
         </div>
         <div>
-          <h3 className="font-semibold text-white">Add Expense</h3>
-          <p className="text-xs text-slate-500">Track fuel, service, etc.</p>
+          <h3 className="font-bold text-white text-lg tracking-tight">Add Expense</h3>
+          <p className="text-sm text-slate-400 font-medium">Track fuel, service, etc.</p>
         </div>
       </div>
 
@@ -104,13 +104,13 @@ export default function ExpenseInput({ onExpenseAdded }) {
           type="submit"
           disabled={loading}
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/20"
+          whileTap={{ scale: 0.98 }}
+          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.5)] border border-emerald-400/20 text-base tracking-wide"
         >
           {loading ? (
-            <Loader2 size={18} className="animate-spin" />
+            <Loader2 size={20} className="animate-spin" />
           ) : (
-            <PlusCircle size={18} />
+            <PlusCircle size={20} />
           )}
           {loading ? "Adding..." : "Add Expense"}
         </motion.button>
