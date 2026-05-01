@@ -14,7 +14,8 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveBike } from "@/hooks/useActiveBike";
 import Navbar from "@/components/Navbar";
@@ -130,18 +131,12 @@ export default function DocumentsPage() {
         createdAt: serverTimestamp(),
       });
 
-      const formData = new FormData();
-      formData.append("file", selectedFile);
+      const fileExt = selectedFile.name.split('.').pop();
+      const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const storageRef = ref(storage, `users/${user.uid}/bikes/${activeBikeId}/documents/${uniqueName}`);
       
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      
-      const uploadData = await res.json();
-      if (!uploadData.success) throw new Error("Local upload failed");
-      
-      const fileUrl = uploadData.url;
+      await uploadBytes(storageRef, selectedFile);
+      const fileUrl = await getDownloadURL(storageRef);
 
       await updateDoc(doc(db, "users", user.uid, "bikes", activeBikeId, "documents", docRef.id), {
         fileUrl,

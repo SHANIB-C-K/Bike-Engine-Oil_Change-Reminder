@@ -2,7 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState, useEffect, useMemo, } from "react";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { useActiveBike } from "@/hooks/useActiveBike";
 import Navbar from "@/components/Navbar";
@@ -107,12 +108,12 @@ export default function ExpensesPage() {
       
       // Upload receipt if exists
       if (receiptFile) {
-        const formData = new FormData();
-        formData.append("file", receiptFile);
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        if (!data.success) throw new Error("Failed to upload receipt");
-        receiptUrl = data.url;
+        const fileExt = receiptFile.name.split('.').pop();
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const storageRef = ref(storage, `users/${user.uid}/bikes/${activeBikeId}/expenses/${uniqueName}`);
+        
+        await uploadBytes(storageRef, receiptFile);
+        receiptUrl = await getDownloadURL(storageRef);
       }
       
       await addDoc(collection(db, "users", user.uid, "bikes", activeBikeId, "expenses"), {
