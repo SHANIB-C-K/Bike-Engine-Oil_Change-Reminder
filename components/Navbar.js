@@ -80,7 +80,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Links */}
-            <div className="hidden lg:flex flex-1 items-center justify-center gap-1.5 px-4 mx-4 border-x border-white/5">
+            <div className="hidden lg:flex flex-1 min-w-0 items-center justify-start gap-1.5 px-4 mx-4 border-x border-white/5 overflow-x-auto no-scrollbar">
               {navLinks.map(({ href, label, icon: Icon }) => {
                 const isActive = pathname === href;
                 return (
