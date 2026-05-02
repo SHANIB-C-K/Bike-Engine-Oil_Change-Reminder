@@ -65,7 +65,7 @@ const inView = (delay = 0) => ({
 export default function LandingPage() {
   const [particles, setParticles] = useState([]);
   const { user } = useAuth();
-  const { activeBike } = useActiveBike();
+  const { activeBike, activeBikeId } = useActiveBike();
 
   useEffect(() => {
      
@@ -77,14 +77,77 @@ export default function LandingPage() {
   }, []);
 
   const isRealData = user && activeBike;
-  const bikeName = isRealData ? `${activeBike.make || "My"} ${activeBike.model || "Bike"}` : "Royal Enfield 350";
+  const bikeName = isRealData ? (activeBike.name || `${activeBike.make || ""} ${activeBike.model || ""}`.trim() || "My Bike") : "Royal Enfield 350";
   const updatedText = isRealData ? "Your active bike" : "Updated just now";
   
-  const currentOdo = isRealData ? (activeBike.currentOdometer || activeBike.purchaseKm || 0) : 12450;
-  const lastChange = isRealData ? (activeBike.lastOilChangeKm || activeBike.purchaseKm || 0) : 11000;
-  const interval = isRealData ? (activeBike.oilChangeInterval || 2000) : 2000;
+  const [liveStats, setLiveStats] = useState(null);
+
+  useEffect(() => {
+    if (!user || !activeBikeId) {
+      setLiveStats(null);
+      return;
+    }
+    const fetchLiveStats = async () => {
+      try {
+        const { collection, query, where, getDocs } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        
+        // 1. Total KM from rides
+        const ridesQ = query(collection(db, "rides"), where("userId", "==", user.uid), where("bikeId", "==", activeBikeId));
+        const ridesSnap = await getDocs(ridesQ);
+        let totalSum = 0;
+        ridesSnap.forEach(d => { totalSum += Number(d.data().km || 0); });
+        
+        // 2. Efficiency from fuel
+        const { buildFuelEntriesWithEfficiency, getLatestKmpl } = await import("@/lib/fuelMetrics");
+        const fuelQ = query(collection(db, "users", user.uid, "fuelLogs"), where("bikeId", "==", activeBikeId));
+        const fuelSnap = await getDocs(fuelQ);
+        const fuelLogs = fuelSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const fuelEntries = buildFuelEntriesWithEfficiency(fuelLogs);
+        const latestKmpl = getLatestKmpl(fuelEntries);
+        
+        // 3. Expenses this month
+        const expQ = query(collection(db, "users", user.uid, "bikes", activeBikeId, "expenses"));
+        const expSnap = await getDocs(expQ);
+        const oldExpQ = query(collection(db, "expenses"), where("userId", "==", user.uid), where("bikeId", "==", activeBikeId));
+        const oldExpSnap = await getDocs(oldExpQ);
+        
+        let mTotal = 0;
+        const now = new Date();
+        const startOfM = new Date(now.getFullYear(), now.getMonth(), 1);
+        const processExp = (dSnap) => {
+          const d = dSnap.data();
+          const dt = d.date?.toDate ? d.date.toDate() : new Date(d.date);
+          if (dt >= startOfM) mTotal += (d.amount || 0);
+        };
+        expSnap.forEach(processExp);
+        oldExpSnap.forEach(processExp);
+        
+        setLiveStats({
+          totalKm: totalSum,
+          latestKmpl: latestKmpl,
+          monthlyExpenses: mTotal
+        });
+      } catch (err) {
+        console.error("Error fetching live stats for hero:", err);
+      }
+    };
+    fetchLiveStats();
+  }, [user, activeBikeId]);
+
+  const currentOdo = isRealData 
+    ? (liveStats?.totalKm ?? activeBike.lastOdometerReading ?? activeBike.purchaseKm ?? 0) 
+    : 12450;
+    
+  const lastChange = isRealData 
+    ? (activeBike.lastResetKm ?? activeBike.purchaseKm ?? 0) 
+    : 11000;
+    
+  const interval = isRealData 
+    ? (activeBike.oilChangeInterval ?? 2000) 
+    : 2000;
   
-  const oilUsedNum = currentOdo - lastChange;
+  const oilUsedNum = Math.max(0, currentOdo - lastChange);
   const oilRemainingNum = Math.max(0, interval - oilUsedNum);
   const oilPercentNum = Math.min(100, Math.max(0, (oilUsedNum / interval) * 100));
 
@@ -93,6 +156,18 @@ export default function LandingPage() {
   const oilRemainingStr = `${oilRemainingNum.toLocaleString()} km`;
   const progressWidthStr = `${oilPercentNum}%`;
   const oilUsedStr = `${oilUsedNum.toLocaleString()} / ${interval.toLocaleString()} km`;
+  
+  const displayEfficiency = isRealData 
+    ? (typeof liveStats?.latestKmpl === "number" && liveStats.latestKmpl > 0 
+        ? `${liveStats.latestKmpl.toFixed(1)} km/L` 
+        : "--") 
+    : "42.3 km/L";
+    
+  const displayExpense = isRealData 
+    ? (typeof liveStats?.monthlyExpenses === "number" 
+        ? `₹${liveStats.monthlyExpenses.toLocaleString('en-IN')}` 
+        : "₹0") 
+    : "₹2,340";
 
   return (
     <>
@@ -220,7 +295,7 @@ export default function LandingPage() {
                         <Fuel size={13} className="text-cyan-400" />
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold">42.3 km/L</p>
+                        <p className="text-white text-sm font-bold">{displayEfficiency}</p>
                         <p className="text-slate-500 text-[10px]">Avg efficiency</p>
                       </div>
                     </div>
@@ -229,7 +304,7 @@ export default function LandingPage() {
                         <TrendingUp size={13} className="text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-white text-sm font-bold">₹2,340</p>
+                        <p className="text-white text-sm font-bold">{displayExpense}</p>
                         <p className="text-slate-500 text-[10px]">This month</p>
                       </div>
                     </div>

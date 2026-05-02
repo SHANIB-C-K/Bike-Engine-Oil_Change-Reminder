@@ -85,8 +85,8 @@ export default function PdfViewer({ url }) {
       </div>
 
       {numPages && (
-        <div className="flex items-center justify-between p-3 bg-slate-900 border-t border-white/10 z-10">
-          <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-row items-center sm:justify-between p-3 bg-slate-900 border-t border-white/10 z-10 gap-3">
+          <div className="flex items-center justify-start gap-2 order-2 sm:order-1">
             <button 
               onClick={() => setScale(s => Math.max(0.5, s - 0.25))} 
               className="p-1.5 rounded-lg bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 transition"
@@ -104,7 +104,7 @@ export default function PdfViewer({ url }) {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3 order-1 col-span-2 sm:col-span-1 sm:order-2 w-full sm:w-auto">
             <button
               disabled={pageNumber <= 1}
               onClick={previousPage}
@@ -124,14 +124,16 @@ export default function PdfViewer({ url }) {
             </button>
           </div>
           
-          <a 
-            href={url} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 transition font-medium"
-          >
-            Open Native
-          </a>
+          <div className="flex items-center justify-end order-3">
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 transition font-medium"
+            >
+              Open Native
+            </a>
+          </div>
         </div>
       )}
     </div>
