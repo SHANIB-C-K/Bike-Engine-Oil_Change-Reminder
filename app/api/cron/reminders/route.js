@@ -27,14 +27,6 @@ function parseFields(fields = {}) {
   return obj;
 }
 
-async function firestoreGet(path) {
-  const url = `${BASE}/${path}?key=${API_KEY}`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const doc = await res.json();
-  return doc.fields ? parseFields(doc.fields) : null;
-}
-
 async function firestoreList(collection) {
   const url = `${BASE}/${collection}?key=${API_KEY}&pageSize=300`;
   const res = await fetch(url);

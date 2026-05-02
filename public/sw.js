@@ -19,7 +19,8 @@ self.addEventListener('push', function (event) {
       if (data.body) body = data.body;
       if (data.icon) icon = data.icon;
       if (data.url) url = data.url;
-    } catch (_) {
+    } catch {
+      // Fallback to plain text
       body = event.data.text() || body;
     }
   }
@@ -66,7 +67,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   console.log('[SW] Installed');
   self.skipWaiting();
 });

@@ -9,7 +9,7 @@ import { useActiveBike } from "@/hooks/useActiveBike";
 import { computeNextDue } from "@/lib/maintenanceUtils";
 import Navbar from "@/components/Navbar";
 import PageLoader from "@/components/PageLoader";
-import { Settings, Save, Loader2, Smartphone, Bell, BellOff, Bike, Navigation, IndianRupee } from "lucide-react";
+import { Settings, Save, Loader2, Smartphone, Bell, Bike, Navigation, IndianRupee } from "lucide-react";
 import toast from "react-hot-toast";
 import { sendNotification } from "@/lib/notifications";
 
