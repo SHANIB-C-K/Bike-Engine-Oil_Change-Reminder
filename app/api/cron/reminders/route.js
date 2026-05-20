@@ -1,4 +1,6 @@
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { NextResponse } from "next/server";
 import { getWebPush } from "@/lib/webPush";
@@ -29,7 +31,7 @@ function parseFields(fields = {}) {
 
 async function firestoreList(collection) {
   const url = `${BASE}/${collection}?key=${API_KEY}&pageSize=300`;
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) return [];
   const data = await res.json();
   return (data.documents || []).map((doc) => ({
@@ -43,6 +45,7 @@ async function writeNotification(userId, { title, body, type = "info" }) {
   const url = `${BASE}/users/${userId}/notifications?key=${API_KEY}`;
   await fetch(url, {
     method: 'POST',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       fields: {
